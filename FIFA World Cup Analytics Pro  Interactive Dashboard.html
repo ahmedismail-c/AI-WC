@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>FIFA World Cup Analytics Pro | Interactive Dashboard</title>
+    
+    <!-- Multiple Chart Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            color: #f1f5f9;
+        }
+
+        .dashboard {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(71, 85, 105, 0.4);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .logo {
+            padding: 30px 24px;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .logo h2 {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        .logo p {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        .stats-overview {
+            padding: 0 20px 20px 20px;
+        }
+
+        .stat-item {
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            transition: all 0.3s;
+        }
+
+        .stat-item:hover {
+            background: rgba(51, 65, 85, 0.8);
+            transform: translateX(5px);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #60a5fa;
+        }
+
+        .nav-buttons {
+            flex: 1;
+            padding: 20px;
+        }
+
+        .nav-btn {
+            width: 100%;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            color: #cbd5e1;
+            text-align: left;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .nav-btn i {
+            width: 24px;
+            margin-right: 12px;
+        }
+
+        .nav-btn:hover {
+            background: rgba(96, 165, 250, 0.1);
+            color: #60a5fa;
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .page-title h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .page-title p {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+
+        .date-badge {
+            background: rgba(96, 165, 250, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+        }
+
+        .metric-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .metric-btn {
+            padding: 10px 20px;
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.4);
+            border-radius: 12px;
+            color: #cbd5e1;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .metric-btn i {
+            margin-right: 8px;
+        }
+
+        .metric-btn:hover {
+            background: rgba(96, 165, 250, 0.2);
+            border-color: #60a5fa;
+        }
+
+        .metric-btn.active {
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            border-color: transparent;
+            color: white;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .chart-card {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid rgba(71, 85, 105, 0.4);
+            transition: all 0.3s;
+        }
+
+        .chart-card:hover {
+            border-color: rgba(96, 165, 250, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .chart-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .chart-header i {
+            color: #60a5fa;
+            font-size: 1.2rem;
+        }
+
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+
+        canvas {
+            max-height: 300px;
+            width: 100%;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-top: 25px;
+            margin-bottom: 20px;
+        }
+
+        .insight-card {
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .insight-card:hover {
+            transform: translateY(-5px);
+            background: rgba(51, 65, 85, 0.8);
+            border-color: #60a5fa;
+        }
+
+        .insight-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .insight-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #94a3b8;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .insight-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #60a5fa;
+        }
+
+        .insight-desc {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(96, 165, 250, 0.3);
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #60a5fa;
+            border-radius: 3px;
+        }
+
+        @media (max-width: 1200px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            .insights-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            .insights-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="loader"></div>
+    <div>Loading World Cup Data from API...</div>
+</div>
+
+<div class="dashboard">
+    <div class="sidebar">
+        <div class="logo">
+            <h2><i class="fas fa-futbol"></i> WorldCup<span style="color:#60a5fa">Pro</span></h2>
+            <p>Interactive Analytics Dashboard</p>
+        </div>
+        
+        <div class="stats-overview" id="sidebarStats">
+            <div class="stat-item">
+                <div class="stat-label">Total Tournaments</div>
+                <div class="stat-value" id="totalTournaments">-</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Total Goals</div>
+                <div class="stat-value" id="totalGoals">-</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Total Attendance</div>
+                <div class="stat-value" id="totalAttendance">-</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Most Titles</div>
+                <div class="stat-value" id="mostTitles">-</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Avg Goals/Match</div>
+                <div class="stat-value" id="avgGoalsMatch">-</div>
+            </div>
+        </div>
+        
+        <div class="nav-buttons">
+            <button class="nav-btn active" data-view="overview">
+                <i class="fas fa-chart-line"></i> Overview Dashboard
+            </button>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="header">
+            <div class="page-title">
+                <h1>FIFA World Cup Analytics</h1>
+                <p>Comprehensive tournament data from 1930 to 2014 | Live from Google Sheets API</p>
+            </div>
+            <div class="date-badge">
+                <i class="fas fa-database"></i> 20 Tournaments
+            </div>
+        </div>
+        
+        <div class="metric-selector">
+            <button class="metric-btn active" data-metric="goals"><i class="fas fa-futbol"></i> Goals Scored</button>
+            <button class="metric-btn" data-metric="attendance"><i class="fas fa-users"></i> Attendance (M)</button>
+            <button class="metric-btn" data-metric="teams"><i class="fas fa-flag-checkered"></i> Teams</button>
+            <button class="metric-btn" data-metric="matches"><i class="fas fa-calendar-alt"></i> Matches</button>
+        </div>
+        
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-line"></i> Tournament Evolution Trend</h3>
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div id="apexChart" class="chart-container"></div>
+            </div>
+            
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-trophy"></i> Championship Distribution</h3>
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                <div id="echartsPie" class="chart-container"></div>
+            </div>
+        </div>
+        
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-bar"></i> Top Nations by Titles</h3>
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <canvas id="chartjsBar" style="max-height: 280px; width: 100%;"></canvas>
+            </div>
+            
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-scatter"></i> Goals vs Attendance Correlation</h3>
+                    <i class="fas fa-chart-scatter"></i>
+                </div>
+                <div id="d3Scatter" class="chart-container"></div>
+            </div>
+        </div>
+        
+        <div class="insights-grid" id="insightsGrid"></div>
+    </div>
+</div>
+
+<script>
+    const API_URL = 'https://sheets.googleapis.com/v4/spreadsheets/1Q-FNyfrdA7Y89OEBS1T5ZGO5AaKeadee7ZULFIZ4x6o/values/wc!A1:Z100?key=AIzaSyBsVDc7-jcRTUDfnvS7mP3rkkv0t_qfuRk';
+    
+    let worldCupData = [];
+    let currentMetric = 'goals';
+    let apexChart, echartsPie, chartjsBar;
+    
+    function parseAttendance(value) {
+        if (!value) return 0;
+        if (typeof value === 'number') return value;
+        let str = String(value).trim().replace(/"/g, '');
+        if (str.includes('.') && str.includes(',')) {
+            str = str.replace(/\./g, '').replace(',', '.');
+        } else if (str.includes('.')) {
+            const parts = str.split('.');
+            if (parts.length === 2 && parts[1].length <= 3 && !parts[0].includes(',')) {
+                str = str.replace('.', '.');
+            } else {
+                str = str.replace(/\./g, '');
+            }
+        } else if (str.includes(',')) {
+            str = str.replace(/,/g, '');
+        }
+        return parseFloat(str);
+    }
+    
+    async function fetchData() {
+        try {
+            const response = await fetch(API_URL);
+            const json = await response.json();
+            
+            if (!json.values) throw new Error('No data received from API');
+            
+            for (let i = 1; i < json.values.length; i++) {
+                const row = json.values[i];
+                if (row.length < 10) continue;
+                const year = parseInt(row[0]);
+                if (isNaN(year)) continue;
+                
+                worldCupData.push({
+                    year: year,
+                    host: row[1] || '',
+                    winner: row[2] || '',
+                    runnerUp: row[3] || '',
+                    third: row[4] || '',
+                    fourth: row[5] || '',
+                    goals: parseInt(row[6]) || 0,
+                    teams: parseInt(row[7]) || 0,
+                    matches: parseInt(row[8]) || 0,
+                    attendance: parseAttendance(row[9])
+                });
+            }
+            
+            updateSidebarStats();
+            updateInsights();
+            initAllCharts();
+            
+            document.getElementById('loadingOverlay').style.display = 'none';
+            
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('loadingOverlay').innerHTML = `
+                <div style="color: #ef4444; text-align: center; max-width: 500px; padding: 20px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 48px;"></i>
+                    <p style="margin-top: 20px;"><strong>Failed to load data</strong></p>
+                    <p style="margin-top: 10px; font-size: 14px;">${error.message}</p>
+                    <p style="margin-top: 10px; font-size: 12px; color: #94a3b8;">Check console for details or verify API key/spreadsheet permissions</p>
+                    <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #60a5fa; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">Retry</button>
+                </div>
+            `;
+        }
+    }
+    
+    function updateSidebarStats() {
+        const totalTournaments = worldCupData.length;
+        const totalGoals = worldCupData.reduce((sum, d) => sum + d.goals, 0);
+        const totalAttendance = worldCupData.reduce((sum, d) => sum + d.attendance, 0);
+        const totalMatches = worldCupData.reduce((sum, d) => sum + d.matches, 0);
+        const avgGoalsMatch = (totalGoals / totalMatches).toFixed(2);
+        
+        const winners = {};
+        worldCupData.forEach(d => { winners[d.winner] = (winners[d.winner] || 0) + 1; });
+        const topWinner = Object.entries(winners).sort((a,b) => b[1] - a[1])[0];
+        
+        document.getElementById('totalTournaments').innerHTML = totalTournaments;
+        document.getElementById('totalGoals').innerHTML = totalGoals.toLocaleString();
+        document.getElementById('totalAttendance').innerHTML = `${(totalAttendance / 1e6).toFixed(1)}M`;
+        document.getElementById('mostTitles').innerHTML = `${topWinner[0]} (${topWinner[1]})`;
+        document.getElementById('avgGoalsMatch').innerHTML = avgGoalsMatch;
+    }
+    
+    function updateInsights() {
+        const winners = {};
+        worldCupData.forEach(d => { winners[d.winner] = (winners[d.winner] || 0) + 1; });
+        const topWinner = Object.entries(winners).sort((a,b) => b[1] - a[1])[0];
+        
+        const highestGoals = [...worldCupData].sort((a,b) => b.goals - a.goals)[0];
+        const largestAttendance = [...worldCupData].sort((a,b) => b.attendance - a.attendance)[0];
+        const totalGoals = worldCupData.reduce((sum, d) => sum + d.goals, 0);
+        const totalMatches = worldCupData.reduce((sum, d) => sum + d.matches, 0);
+        const avgGoalsPerMatch = (totalGoals / totalMatches).toFixed(2);
+        
+        const hostWins = worldCupData.filter(d => d.host === d.winner).length;
+        
+        const insights = [
+            { icon: "🏆", title: "Most Titles", value: topWinner[0], desc: `${topWinner[1]} championships` },
+            { icon: "⚽", title: "Highest Scoring", value: highestGoals.year, desc: `${highestGoals.goals} goals` },
+            { icon: "👥", title: "Peak Attendance", value: largestAttendance.year, desc: `${(largestAttendance.attendance/1e6).toFixed(1)}M fans` },
+            { icon: "📊", title: "Avg Goals/Match", value: avgGoalsPerMatch, desc: "per match overall" },
+            { icon: "🏠", title: "Home Advantage", value: `${hostWins}/20`, desc: "host nations won" },
+            { icon: "🌍", title: "Total Goals", value: totalGoals.toLocaleString(), desc: "across all tournaments" },
+            { icon: "🎯", title: "Most Matches", value: worldCupData[worldCupData.length-1].matches, desc: "in modern era" },
+            { icon: "⭐", title: "First Champion", value: worldCupData[0].winner, desc: worldCupData[0].year.toString() },
+            { icon: "🔥", title: "Recent Champion", value: worldCupData[worldCupData.length-1].winner, desc: worldCupData[worldCupData.length-1].year.toString() },
+            { icon: "📈", title: "Tournament Growth", value: `${worldCupData[0].teams} → ${worldCupData[worldCupData.length-1].teams}`, desc: "teams expansion" }
+        ];
+        
+        document.getElementById('insightsGrid').innerHTML = insights.map(insight => `
+            <div class="insight-card">
+                <div class="insight-icon">${insight.icon}</div>
+                <div class="insight-title">${insight.title}</div>
+                <div class="insight-value">${insight.value}</div>
+                <div class="insight-desc">${insight.desc}</div>
+            </div>
+        `).join('');
+    }
+    
+    function initAllCharts() {
+        initApexChart();
+        initEChartsPie();
+        initChartJSBar();
+        initD3Scatter();
+    }
+    
+    function initApexChart() {
+        const metricMap = {
+            goals: worldCupData.map(d => ({ x: d.year, y: d.goals })),
+            attendance: worldCupData.map(d => ({ x: d.year, y: (d.attendance / 1e6).toFixed(2) })),
+            teams: worldCupData.map(d => ({ x: d.year, y: d.teams })),
+            matches: worldCupData.map(d => ({ x: d.year, y: d.matches }))
+        };
+        
+        const metricNames = {
+            goals: 'Goals Scored',
+            attendance: 'Attendance (Millions)',
+            teams: 'Number of Teams',
+            matches: 'Matches Played'
+        };
+        
+        const options = {
+            series: [{
+                name: metricNames[currentMetric],
+                data: metricMap[currentMetric],
+                type: 'line'
+            }],
+            chart: {
+                height: '100%',
+                background: 'transparent',
+                toolbar: { show: false },
+                animations: { enabled: true, easing: 'easeinout', speed: 800 }
+            },
+            stroke: { curve: 'smooth', width: 3, colors: ['#60a5fa'] },
+            fill: {
+                type: 'gradient',
+                gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.3 }
+            },
+            markers: { size: 5, colors: ['#60a5fa'], strokeColors: '#fff', strokeWidth: 2 },
+            grid: { borderColor: 'rgba(71, 85, 105, 0.3)', xaxis: { lines: { show: true } } },
+            xaxis: { 
+                type: 'numeric', 
+                title: { text: 'Year', style: { color: '#94a3b8' } },
+                labels: { style: { colors: '#94a3b8' } }
+            },
+            yaxis: { 
+                title: { text: metricNames[currentMetric], style: { color: '#94a3b8' } },
+                labels: { style: { colors: '#94a3b8' } }
+            },
+            theme: { mode: 'dark' },
+            tooltip: { theme: 'dark' }
+        };
+        
+        const container = document.querySelector("#apexChart");
+        if (apexChart) apexChart.destroy();
+        apexChart = new ApexCharts(container, options);
+        apexChart.render();
+    }
+    
+    function initEChartsPie() {
+        const winners = {};
+        worldCupData.forEach(d => { winners[d.winner] = (winners[d.winner] || 0) + 1; });
+        const data = Object.entries(winners).map(([name, value]) => ({ name, value }));
+        
+        const chartDom = document.getElementById('echartsPie');
+        echartsPie = echarts.init(chartDom);
+        echartsPie.setOption({
+            tooltip: { trigger: 'item', backgroundColor: '#1e293b', borderColor: '#60a5fa', textStyle: { color: '#f1f5f9' } },
+            legend: { orient: 'vertical', left: 'left', textStyle: { color: '#cbd5e1' } },
+            series: [{
+                type: 'pie',
+                radius: '55%',
+                data: data,
+                emphasis: { scale: true, label: { show: true } },
+                label: { show: true, formatter: '{b}: {d}%', color: '#f1f5f9', fontSize: 11 },
+                itemStyle: {
+                    borderRadius: 8,
+                    borderColor: '#0f172a',
+                    borderWidth: 2,
+                    color: params => {
+                        const colors = ['#60a5fa', '#a78bfa', '#f59e0b', '#ef4444', '#10b981', '#ec489a', '#06b6d4', '#8b5cf6'];
+                        return colors[params.dataIndex % colors.length];
+                    }
+                }
+            }],
+            backgroundColor: 'transparent',
+            grid: { containLabel: true }
+        });
+    }
+    
+    function initChartJSBar() {
+        const winners = {};
+        worldCupData.forEach(d => { winners[d.winner] = (winners[d.winner] || 0) + 1; });
+        const sorted = Object.entries(winners).sort((a,b) => b[1] - a[1]).slice(0, 8);
+        
+        const ctx = document.getElementById('chartjsBar').getContext('2d');
+        if (chartjsBar) chartjsBar.destroy();
+        
+        chartjsBar = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sorted.map(d => d[0]),
+                datasets: [{
+                    label: 'World Cup Titles',
+                    data: sorted.map(d => d[1]),
+                    backgroundColor: 'rgba(96, 165, 250, 0.8)',
+                    borderRadius: 8,
+                    borderColor: '#60a5fa',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { labels: { color: '#cbd5e1' } },
+                    tooltip: { backgroundColor: '#1e293b', titleColor: '#f1f5f9', bodyColor: '#cbd5e1' }
+                },
+                scales: {
+                    y: { 
+                        ticks: { color: '#94a3b8', stepSize: 1 },
+                        grid: { color: 'rgba(71, 85, 105, 0.3)' },
+                        title: { display: true, text: 'Number of Titles', color: '#94a3b8' }
+                    },
+                    x: { 
+                        ticks: { color: '#94a3b8', rotation: -45, autoSkip: true, maxRotation: 45, minRotation: 45 },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+    
+    function initD3Scatter() {
+        const margin = { top: 30, right: 30, bottom: 60, left: 70 };
+        const container = document.getElementById('d3Scatter');
+        const width = container.clientWidth - margin.left - margin.right;
+        const height = 300 - margin.top - margin.bottom;
+        
+        d3.select("#d3Scatter").html("");
+        
+        const svg = d3.select("#d3Scatter")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+        
+        const xScale = d3.scaleLinear()
+            .domain([0, d3.max(worldCupData, d => d.attendance / 1e6) * 1.1])
+            .range([0, width]);
+        
+        const yScale = d3.scaleLinear()
+            .domain([0, d3.max(worldCupData, d => d.goals) * 1.1])
+            .range([height, 0]);
+        
+        svg.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(xScale).tickFormat(d => d + 'M'))
+            .style("color", "#94a3b8")
+            .style("font-size", "10px");
+        
+        svg.append("g")
+            .call(d3.axisLeft(yScale))
+            .style("color", "#94a3b8")
+            .style("font-size", "10px");
+        
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "scatter-tooltip")
+            .style("position", "absolute")
+            .style("background", "#1e293b")
+            .style("color", "white")
+            .style("padding", "8px 12px")
+            .style("border-radius", "8px")
+            .style("font-size", "12px")
+            .style("pointer-events", "none")
+            .style("opacity", "0")
+            .style("z-index", "1000")
+            .style("border", "1px solid #60a5fa");
+        
+        svg.selectAll("circle")
+            .data(worldCupData)
+            .enter()
+            .append("circle")
+            .attr("cx", d => xScale(d.attendance / 1e6))
+            .attr("cy", d => yScale(d.goals))
+            .attr("r", 8)
+            .attr("fill", "#60a5fa")
+            .attr("opacity", 0.7)
+            .attr("stroke", "#fff")
+            .attr("stroke-width", 1.5)
+            .on("mouseover", function(event, d) {
+                d3.select(this).attr("r", 12).attr("fill", "#a78bfa");
+                tooltip.style("opacity", 1)
+                    .html(`<strong>${d.year} - ${d.host}</strong><br/>⚽ ${d.goals} goals<br/>👥 ${(d.attendance/1e6).toFixed(1)}M fans<br/>🏆 ${d.winner}`)
+                    .style("left", (event.pageX + 15) + "px")
+                    .style("top", (event.pageY - 40) + "px");
+            })
+            .on("mouseout", function() {
+                d3.select(this).attr("r", 8).attr("fill", "#60a5fa");
+                tooltip.style("opacity", 0);
+            });
+        
+        svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", height + 40)
+            .attr("text-anchor", "middle")
+            .style("fill", "#94a3b8")
+            .style("font-size", "11px")
+            .text("Attendance (Millions) →");
+        
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", -45)
+            .attr("x", -height / 2)
+            .attr("text-anchor", "middle")
+            .style("fill", "#94a3b8")
+            .style("font-size", "11px")
+            .text("↑ Goals Scored");
+    }
+    
+    document.querySelectorAll('.metric-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentMetric = this.getAttribute('data-metric');
+            initApexChart();
+        });
+    });
+    
+    window.addEventListener('resize', () => {
+        setTimeout(() => {
+            if (apexChart) apexChart.updateOptions({});
+            if (echartsPie) echartsPie.resize();
+            if (chartjsBar) chartjsBar.update();
+            initD3Scatter();
+        }, 200);
+    });
+    
+    fetchData();
+</script>
+</body>
+</html>
